@@ -23,8 +23,8 @@ public class Dev4jProducer {
 		props.put("linger.ms", "10");
 		
 		try (Producer<String, String> producer = new KafkaProducer<>(props);) {			
-			for (int i = 0;i<1000000;i++) {
-				producer.send(new ProducerRecord<String, String>("devs4j-topic", String.valueOf(i), "devs4j-value"));				
+			for (int i = 0;i<100;i++) {
+				producer.send(new ProducerRecord<String, String>("devs4j-topic", "devs4j-key", String.valueOf(i)));				
 			}
 			producer.flush();
 		} 
