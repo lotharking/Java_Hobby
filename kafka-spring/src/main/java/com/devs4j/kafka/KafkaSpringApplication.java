@@ -16,6 +16,7 @@ import org.springframework.kafka.core.KafkaProducerException;
 import org.springframework.kafka.core.KafkaSendCallback;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.util.concurrent.ListenableFuture;
 
 @SpringBootApplication
@@ -23,9 +24,6 @@ public class KafkaSpringApplication implements CommandLineRunner{
 	
 	@Autowired
 	private KafkaTemplate<String, String> kafkaTemplate;
-	
-	@Autowired
-	private KafkaListenerEndpointRegistry registry;
 	
 	private static final Logger log = LoggerFactory.getLogger(KafkaSpringApplication.class);
 
@@ -43,18 +41,17 @@ public class KafkaSpringApplication implements CommandLineRunner{
 	public static void main(String[] args) {
 		SpringApplication.run(KafkaSpringApplication.class, args);
 	}
+	
+	@Scheduled(fixedDelay = 1000, initialDelay = 5000)
+	public void print() {
+		log.info("Devs4j rocks!");
+	}
 
 	@Override
 	public void run(String... args) throws Exception {
 		for(int i=0;i<100;i++) {
 			kafkaTemplate.send("devs4j-topic", String.valueOf(i), String.format("Sample message %d", i));			
 		}
-		log.info("waiting for start...");
-		Thread.sleep(5000);
-		log.info("Starting");
-		registry.getListenerContainer("devs4jId").start();
-		Thread.sleep(5000);
-		registry.getListenerContainer("devs4jId").stop();
 	}
 
 }

@@ -16,8 +16,15 @@ import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.core.MicrometerProducerListener;
+import org.springframework.scheduling.annotation.EnableScheduling;
+
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.prometheus.PrometheusConfig;
+import io.micrometer.prometheus.PrometheusMeterRegistry;
 
 @Configuration
+@EnableScheduling //Programing scheduling
 public class KafkaConfiguration {
 	
 	public Map<String, Object> producerProperties() {
@@ -30,13 +37,6 @@ public class KafkaConfiguration {
 		props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,StringSerializer.class);
 		props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,StringSerializer.class);
 		return props;
-	}
-	
-	@Bean
-	public KafkaTemplate<String, String> kafkaTemplate() {
-		DefaultKafkaProducerFactory<String, String> producerFactory = new DefaultKafkaProducerFactory<>(producerProperties());
-		KafkaTemplate<String, String> template = new KafkaTemplate<>(producerFactory);
-		return template;
 	}
 
 	public Map<String, Object> consumerProperties() {
@@ -52,16 +52,33 @@ public class KafkaConfiguration {
 	}
 	
 	@Bean
+	public KafkaTemplate<String, String> kafkaTemplate() {
+		//Producer message
+		DefaultKafkaProducerFactory<String, String> producerFactory = new DefaultKafkaProducerFactory<>(producerProperties());
+		
+		producerFactory.addListener(new MicrometerProducerListener<String, String>(meterRegistry()));// Metrics in producer
+		KafkaTemplate<String, String> template = new KafkaTemplate<>(producerFactory);
+		return template;
+	}
+	
+	@Bean
 	public ConsumerFactory<String, String> consumerFactory() {
 		return new DefaultKafkaConsumerFactory<>(consumerProperties());		
 	}
 	
 	@Bean
 	public ConcurrentKafkaListenerContainerFactory<String, String> listenerContainerFactory() {
+		//Method for concurrent message
 		ConcurrentKafkaListenerContainerFactory<String, String> listenerContainerFactory= new ConcurrentKafkaListenerContainerFactory<>();
 		listenerContainerFactory.setConsumerFactory(consumerFactory());
 		listenerContainerFactory.setBatchListener(true);
 		listenerContainerFactory.setConcurrency(3);
 		return listenerContainerFactory;
+	}
+	
+	@Bean
+	public MeterRegistry meterRegistry() {
+		PrometheusMeterRegistry meterRegistry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
+		return meterRegistry;
 	}
 }
