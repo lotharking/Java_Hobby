@@ -5,8 +5,6 @@ import java.util.Map;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.common.serialization.IntegerDeserializer;
-import org.apache.kafka.common.serialization.IntegerSerializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.context.annotation.Bean;
@@ -16,12 +14,10 @@ import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.kafka.core.MicrometerProducerListener;
+import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.prometheus.PrometheusConfig;
-import io.micrometer.prometheus.PrometheusMeterRegistry;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Configuration
 @EnableScheduling //Programing scheduling
@@ -43,9 +39,6 @@ public class KafkaConfiguration {
 		Map<String, Object> props=new HashMap<>();
 		props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,"localhost:9092");
 		props.put(ConsumerConfig.GROUP_ID_CONFIG,"devs4j-group");
-		//props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG,true);
-		//props.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG,"100");
-		//props.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG,"15000");
 		props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,StringDeserializer.class);
 		props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,StringDeserializer.class);
 		return props;
@@ -54,11 +47,15 @@ public class KafkaConfiguration {
 	@Bean
 	public KafkaTemplate<String, String> kafkaTemplate() {
 		//Producer message
-		DefaultKafkaProducerFactory<String, String> producerFactory = new DefaultKafkaProducerFactory<>(producerProperties());
-		
-		producerFactory.addListener(new MicrometerProducerListener<String, String>(meterRegistry()));// Metrics in producer
-		KafkaTemplate<String, String> template = new KafkaTemplate<>(producerFactory);
+		Map<String, Object> senderProps = producerProperties();
+		ProducerFactory<String, String> pf = new DefaultKafkaProducerFactory<String, String>(senderProps);
+		KafkaTemplate<String, String> template = new KafkaTemplate<>(pf);		
 		return template;
+	}
+	
+	@Bean
+	public ObjectMapper mapper() {
+		return new ObjectMapper();
 	}
 	
 	@Bean
@@ -72,13 +69,7 @@ public class KafkaConfiguration {
 		ConcurrentKafkaListenerContainerFactory<String, String> listenerContainerFactory= new ConcurrentKafkaListenerContainerFactory<>();
 		listenerContainerFactory.setConsumerFactory(consumerFactory());
 		listenerContainerFactory.setBatchListener(true);
-		listenerContainerFactory.setConcurrency(3);
+		listenerContainerFactory.setConcurrency(10);
 		return listenerContainerFactory;
-	}
-	
-	@Bean
-	public MeterRegistry meterRegistry() {
-		PrometheusMeterRegistry meterRegistry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
-		return meterRegistry;
 	}
 }
