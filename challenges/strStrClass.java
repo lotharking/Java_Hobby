@@ -11,6 +11,15 @@
 
 class strStrClass {
     public int strStr(String haystack, String needle) {
-        return null;
+        int out = -1;
+        if(!haystack.contains(needle)) return out;
+        int i=0;
+        while(i < haystack.length()){
+            if (haystack.substring(i).startsWith(needle)){
+                out=i;
+                break;
+            }
+        }
+        return out;
     }
 }
