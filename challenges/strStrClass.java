@@ -19,6 +19,7 @@ class strStrClass {
                 out=i;
                 break;
             }
+            i++;
         }
         return out;
     }
