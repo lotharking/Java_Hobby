@@ -3,28 +3,50 @@ public class threeSums {
         Set<List<Integer>> result = new HashSet<>();
         List<Integer> list = new ArrayList<>();
         Arrays.sort(nums);
-        for(int i=0;i<nums.length;i++){
+        for(int i=0;i<nums.length-1;i++){
             list.add(nums[i]);
-            result = secondValue(nums, list, i+1, result);
+            result = compareElements(nums, list, i, result);
             list.remove(list.size()-1);
         }
         return new ArrayList(result);
     }
-    public Set<List<Integer>> secondValue(int[] nums, List<Integer> list, int index, Set<List<Integer>> result){
-        for(int i=index;i<nums.length;i++){
-            list.add(nums[i]);
-            result = lastValue(nums, list, i+1, result);
-            list.remove(list.size()-1);
+    public Set<List<Integer>> compareElements(int[] nums, List<Integer> list, int index, Set<List<Integer>> result){
+        int init = index + 1;
+        int lastV = nums.length - 1;
+        while(true){
+            if(init < lastV){
+                int l = nums[init];
+                int r = nums[lastV];
+                list.add(l);
+                list.add(r);
+                int sum = list.stream().mapToInt(Integer::intValue).sum();
+                if(sum==0) {
+                    result.add(new ArrayList<>(list));  
+                    init = add(nums, init);
+                    lastV = less(nums, lastV);
+                } else if (sum<0) init = add(nums, init);
+                else lastV = less(nums, lastV);
+                list.remove(list.size()-1);
+                list.remove(list.size()-1);
+            }
+            else {break;}
         }
         return result;
     }
-    public Set<List<Integer>> lastValue(int[] nums, List<Integer> list, int index, Set<List<Integer>> result){
-        for(int i=index;i<nums.length;i++){
-            list.add(nums[i]);
-            int sum = list.stream().mapToInt(Integer::intValue).sum();
-            if(sum==0) result.add(new ArrayList<>(list));
-            list.remove(list.size()-1);
+    public Integer add(int[] nums, int index){
+        index++;
+        while(nums[index]==nums[index-1]) {
+            if (index == nums.length - 1) break;
+            index++;
         }
-        return result;
+        return index;
+    }
+    public Integer less(int[] nums, int index){
+        index--;
+        while(nums[index]==nums[index+1]) {
+            if (index == 0) break;
+            index--;
+        }
+        return index;
     }
 }
